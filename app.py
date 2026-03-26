@@ -76,9 +76,10 @@ mlp_ext_model.eval()
 
 import pandas as pd
 
-NUM_COLS_9  = ['amount', 'age', 'income', 'debt', 'credit_score', 'hour', 'day', 'month', 'year']
-NUM_COLS_14 = ['amount', 'age', 'income', 'debt', 'credit_score', 'hour', 'day', 'month', 'year',
-               'debt_to_income', 'amount_to_income', 'amount_to_debt', 'credit_x_amount', 'age_x_debt']
+NUM_COLS_9_FT  = ['amount', 'age', 'income', 'debt', 'credit_score', 'year', 'month', 'day', 'hour']
+NUM_COLS_9_MLP = ['amount', 'age', 'income', 'debt', 'credit_score', 'hour', 'day', 'month', 'year']
+NUM_COLS_14    = ['amount', 'age', 'income', 'debt', 'credit_score', 'hour', 'day', 'month', 'year',
+                  'debt_to_income', 'amount_to_income', 'amount_to_debt', 'credit_x_amount', 'age_x_debt']
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -106,13 +107,19 @@ def predict():
         credit_x_amount  = credit_score * amount
         age_x_debt       = age * debt
 
-        # 9 original features as DataFrame
-        features_9 = pd.DataFrame([[
+        # 9 features — FTTransformer order
+        features_9_ft = pd.DataFrame([[
+            amount, age, income, debt, credit_score,
+            year, month, day, hour
+        ]], columns=NUM_COLS_9_FT)
+
+        # 9 features — MLP order
+        features_9_mlp = pd.DataFrame([[
             amount, age, income, debt, credit_score,
             hour, day, month, year
-        ]], columns=NUM_COLS_9)
+        ]], columns=NUM_COLS_9_MLP)
 
-        # 14 extracted features as DataFrame
+        # 14 extracted features
         features_14 = pd.DataFrame([[
             amount, age, income, debt, credit_score,
             hour, day, month, year,
@@ -121,7 +128,7 @@ def predict():
         ]], columns=NUM_COLS_14)
 
         if model_type == 'ft_original':
-            scaled = ft_scaler.transform(features_9)
+            scaled = ft_scaler.transform(features_9_ft)
             x_num  = torch.tensor(scaled, dtype=torch.float32)
             x_cat  = torch.tensor([[0, 0]], dtype=torch.long)
             with torch.no_grad():
@@ -137,7 +144,7 @@ def predict():
             label = 'FTTransformer — Extracted'
 
         elif model_type == 'mlp_original':
-            scaled = mlp_scaler.transform(features_9)
+            scaled = mlp_scaler.transform(features_9_mlp)
             x      = torch.tensor(scaled, dtype=torch.float32)
             with torch.no_grad():
                 output = torch.sigmoid(mlp_model(x))
