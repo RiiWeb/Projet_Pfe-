@@ -3,420 +3,360 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fraud Detection System</title>
+  <title>FraudIntel — Transaction Analysis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:#f5f3ee; --surface:#edeae3; --card:#ffffff; --ink:#1a1a1a;
-      --ink3:#8a8a8a; --rule:#d4cfc6; --red:#c0392b; --green:#1a6b3c;
-      --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+      --bg:#f0f2f5; --white:#ffffff; --blue:#1a56db; --blue-lt:#eef3fd;
+      --border:#e2e6ef; --border2:#cdd4e4; --text:#1a2744; --text2:#4a5578;
+      --text3:#8a96b0; --red:#dc2626; --red-lt:#fef2f2; --green:#16a34a;
+      --green-lt:#f0fdf4; --sans:'Inter',sans-serif;
     }
-    body { background:var(--bg); color:var(--ink); font-family:var(--sans); min-height:100vh; }
-
-    /* Topbar */
-    .topbar { border-bottom:2px solid var(--ink); padding:0 48px; height:56px; display:flex; align-items:center; justify-content:space-between; }
-    .site-id { font-family:var(--mono); font-size:13px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; }
-    .topbar-nav { display:flex; gap:24px; }
-    .topbar-nav a { font-family:var(--mono); font-size:11px; color:var(--ink3); text-decoration:none; letter-spacing:0.08em; text-transform:uppercase; }
-    .topbar-right { font-family:var(--mono); font-size:11px; color:var(--ink3); }
-
-    /* Section bar */
-    .section-bar { border-bottom:1px solid var(--rule); padding:10px 48px; display:flex; align-items:center; gap:8px; }
-    .section-bar span { font-family:var(--mono); font-size:11px; color:var(--ink3); }
-    .section-bar .current { color:var(--ink); font-weight:500; }
-
-    /* Model tabs */
-    .model-tabs { border-bottom:1px solid var(--rule); padding:0 48px; display:flex; gap:0; background:var(--bg); }
-    .tab-btn {
-      font-family:var(--mono); font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
-      padding:14px 24px; border:none; background:none; color:var(--ink3); cursor:pointer;
-      border-bottom:2px solid transparent; margin-bottom:-1px; transition:all 0.15s;
-    }
-    .tab-btn:hover { color:var(--ink); }
-    .tab-btn.active { color:var(--ink); border-bottom-color:var(--ink); font-weight:600; }
-
-    /* Page layout */
-    .page { display:grid; grid-template-columns:1fr 400px; min-height:calc(100vh - 117px); }
-    .left-panel { border-right:1px solid var(--rule); padding:40px 48px; }
-    .right-panel { padding:40px; display:flex; flex-direction:column; gap:20px; }
-
-    /* Title */
-    .page-title h1 { font-size:28px; font-weight:600; letter-spacing:-0.5px; }
-    .page-title p { margin-top:8px; font-size:13px; color:var(--ink3); line-height:1.6; max-width:480px; font-weight:300; }
-    .divider { border:none; border-top:1px solid var(--rule); margin:28px 0; }
-
-    /* Model badge */
-    .model-badge {
-      display:inline-flex; align-items:center; gap:8px;
-      font-family:var(--mono); font-size:11px; color:var(--ink3);
-      background:var(--surface); border:1px solid var(--rule);
-      border-radius:4px; padding:6px 12px; margin-bottom:24px;
-    }
-    .model-badge strong { color:var(--ink); }
-
-    /* Form */
-    .form-section { margin-bottom:28px; }
-    .form-section-label { font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:var(--ink3); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--rule); }
-    .fields-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    .fields-row.four { grid-template-columns:repeat(4,1fr); }
-    .field { display:flex; flex-direction:column; gap:5px; }
-    .field label { font-family:var(--mono); font-size:10px; color:var(--ink3); letter-spacing:0.08em; text-transform:uppercase; }
-    .field-wrap { position:relative; }
-    .field-unit { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-family:var(--mono); font-size:11px; color:var(--ink3); pointer-events:none; }
-    input[type="number"] { width:100%; background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:9px 12px; font-family:var(--mono); font-size:13px; color:var(--ink); outline:none; transition:border-color 0.15s; -moz-appearance:textfield; }
-    input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; }
-    input[type="number"]:focus { border-color:var(--ink); }
-    input.has-unit { padding-right:32px; }
-
-    /* Extracted features notice */
-    .ext-notice { background:var(--surface); border:1px solid var(--rule); border-radius:4px; padding:10px 14px; font-family:var(--mono); font-size:11px; color:var(--ink3); margin-bottom:20px; line-height:1.6; display:none; }
+    body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; }
+    .topnav { background:var(--white); border-bottom:1px solid var(--border); height:52px; display:flex; align-items:center; padding:0 32px; }
+    .brand { font-size:16px; font-weight:700; color:var(--blue); margin-right:32px; letter-spacing:-0.3px; }
+    .nav-links { display:flex; align-items:center; gap:4px; flex:1; }
+    .nav-link { padding:6px 16px; font-size:13px; font-weight:500; color:var(--text2); cursor:pointer; border-bottom:2px solid transparent; height:52px; display:flex; align-items:center; transition:color 0.15s; }
+    .nav-link.active { color:var(--blue); border-bottom-color:var(--blue); font-weight:600; }
+    .nav-link:hover:not(.active) { color:var(--text); }
+    .nav-right { display:flex; align-items:center; gap:12px; }
+    .nav-icon { width:34px; height:34px; border-radius:8px; background:var(--bg); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer; color:var(--text2); }
+    .nav-avatar { width:34px; height:34px; border-radius:50%; background:#c7d4f0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--blue); }
+    .page { max-width:1180px; margin:0 auto; padding:40px 32px 60px; }
+    .page-title { font-size:32px; font-weight:700; color:var(--text); letter-spacing:-0.5px; margin-bottom:6px; }
+    .page-desc  { font-size:14px; color:var(--text3); margin-bottom:32px; }
+    .grid { display:grid; grid-template-columns:1fr 340px; gap:24px; align-items:start; }
+    @media(max-width:900px){ .grid{grid-template-columns:1fr;} }
+    .left-col { display:flex; flex-direction:column; gap:16px; }
+    .model-section-label { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:12px; }
+    .model-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+    .model-card { background:var(--white); border:1.5px solid var(--border); border-radius:10px; padding:14px 16px; cursor:pointer; transition:all 0.15s; }
+    .model-card:hover { border-color:var(--border2); }
+    .model-card.active { border-color:var(--blue); background:var(--blue-lt); }
+    .model-card-name { font-size:14px; font-weight:600; color:var(--text); margin-bottom:2px; }
+    .model-card.active .model-card-name { color:var(--blue); }
+    .model-card-sub { font-size:12px; color:var(--text3); }
+    .ext-notice { padding:10px 14px; background:var(--blue-lt); border:1px solid #bfdbfe; border-radius:8px; font-size:12px; color:var(--blue); display:none; margin-bottom:4px; }
     .ext-notice.show { display:block; }
-
-    /* Submit */
-    .submit-row { display:flex; align-items:center; gap:14px; margin-top:8px; }
-    .btn-submit { background:var(--ink); color:var(--bg); border:none; border-radius:4px; padding:11px 28px; font-family:var(--mono); font-size:12px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:opacity 0.15s; display:flex; align-items:center; gap:10px; }
-    .btn-submit:hover { opacity:0.8; }
-    .btn-submit:disabled { opacity:0.4; cursor:not-allowed; }
-    .btn-clear { background:none; border:1px solid var(--rule); border-radius:4px; padding:11px 20px; font-family:var(--mono); font-size:12px; color:var(--ink3); letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:border-color 0.15s,color 0.15s; }
-    .btn-clear:hover { border-color:var(--ink); color:var(--ink); }
-    .spinner { width:13px; height:13px; border:2px solid rgba(245,243,238,0.3); border-top-color:var(--bg); border-radius:50%; animation:spin 0.6s linear infinite; display:none; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-card { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:24px; }
+    .form-card-title { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:20px; }
+    .field { margin-bottom:18px; }
+    .field:last-child { margin-bottom:0; }
+    .field-label { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:6px; }
+    .field-wrap { position:relative; }
+    .field-prefix { position:absolute; left:0; top:0; bottom:0; display:flex; align-items:flex-end; padding-bottom:8px; font-size:14px; color:var(--text3); pointer-events:none; }
+    input[type="number"] { width:100%; background:none; border:none; border-bottom:1.5px solid var(--border2); padding:0 0 8px 0; font-family:var(--sans); font-size:15px; font-weight:500; color:var(--text); outline:none; transition:border-color 0.15s; -moz-appearance:textfield; }
+    input.has-prefix { padding-left:16px; }
+    input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance:none; }
+    input:focus { border-bottom-color:var(--blue); }
+    input::placeholder { color:var(--border2); font-weight:400; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .ts-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px 24px; }
+    .actions { display:flex; align-items:center; gap:16px; margin-top:8px; }
+    .btn-run { padding:13px 32px; background:var(--blue); color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; cursor:pointer; display:flex; align-items:center; gap:8px; transition:background 0.15s; box-shadow:0 2px 8px rgba(26,86,219,0.25); }
+    .btn-run:hover { background:#1344b8; }
+    .btn-run:disabled { opacity:0.5; cursor:not-allowed; }
+    .btn-clear { font-size:13px; font-weight:700; color:var(--blue); background:none; border:none; cursor:pointer; letter-spacing:0.05em; padding:4px 8px; }
+    .btn-clear:hover { opacity:0.7; }
+    .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; border-radius:50%; animation:spin 0.6s linear infinite; display:none; }
     @keyframes spin { to { transform:rotate(360deg); } }
-    .error-bar { background:rgba(192,57,43,0.08); border:1px solid rgba(192,57,43,0.3); border-radius:4px; padding:9px 14px; font-family:var(--mono); font-size:11px; color:var(--red); display:none; margin-top:10px; }
-
-    /* Result */
-    .result-block { border:1px solid var(--rule); border-radius:6px; overflow:hidden; background:var(--card); }
-    .result-top { padding:28px; text-align:center; border-bottom:1px solid var(--rule); min-height:155px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-    .idle-indicator { width:44px; height:44px; border:1px dashed var(--rule); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; }
-    .idle-dot { width:7px; height:7px; border-radius:50%; background:var(--rule); }
-    .idle-label { font-family:var(--mono); font-size:11px; color:var(--ink3); }
-    .verdict-wrap { display:none; flex-direction:column; align-items:center; }
-    .verdict-stamp { font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:0.2em; text-transform:uppercase; padding:5px 14px; border-radius:2px; border:1.5px solid; margin-bottom:14px; }
-    .verdict-stamp.fraud { color:var(--red); border-color:var(--red); background:rgba(192,57,43,0.06); }
-    .verdict-stamp.legit { color:var(--green); border-color:var(--green); background:rgba(26,107,60,0.06); }
-    .verdict-score { font-family:var(--mono); font-size:48px; font-weight:300; letter-spacing:-2px; line-height:1; }
-    .verdict-score.fraud { color:var(--red); }
-    .verdict-score.legit { color:var(--green); }
-    .verdict-score-label { font-family:var(--mono); font-size:10px; color:var(--ink3); letter-spacing:0.1em; text-transform:uppercase; margin-top:5px; }
-    .meter-wrap { padding:18px 24px; border-bottom:1px solid var(--rule); }
-    .meter-header { display:flex; justify-content:space-between; margin-bottom:8px; }
-    .meter-header span { font-family:var(--mono); font-size:10px; color:var(--ink3); letter-spacing:0.08em; text-transform:uppercase; }
-    .meter-track { height:4px; background:var(--surface); border-radius:2px; overflow:hidden; }
-    .meter-fill { height:100%; width:0%; border-radius:2px; background:var(--ink3); transition:width 0.9s cubic-bezier(0.4,0,0.2,1),background 0.3s; }
-    .meter-fill.fraud { background:var(--red); }
-    .meter-fill.legit { background:var(--green); }
-    .stat-row { display:flex; justify-content:space-between; align-items:center; padding:11px 24px; border-bottom:1px solid var(--surface); }
+    .error-bar { margin-top:12px; padding:10px 14px; background:var(--red-lt); border:1px solid #fca5a5; border-radius:8px; font-size:12px; color:var(--red); display:none; }
+    .right-col { display:flex; flex-direction:column; gap:16px; }
+    .result-card { background:var(--white); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .result-top { height:4px; background:var(--blue); transition:background 0.3s; }
+    .result-top.fraud { background:var(--red); }
+    .result-top.legit { background:var(--green); }
+    .result-body { padding:24px; }
+    .result-label { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:20px; }
+    .donut-wrap { display:flex; justify-content:center; margin-bottom:20px; position:relative; }
+    .donut-svg { width:180px; height:180px; }
+    .donut-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+    .donut-pct { font-size:34px; font-weight:700; color:var(--text); letter-spacing:-1px; line-height:1; }
+    .donut-pct.fraud { color:var(--red); }
+    .donut-pct.legit { color:var(--green); }
+    .donut-sub { font-size:10px; color:var(--text3); font-weight:600; text-transform:uppercase; letter-spacing:0.08em; margin-top:3px; }
+    .stats { border-top:1px solid var(--border); }
+    .stat-row { display:flex; justify-content:space-between; align-items:center; padding:13px 24px; border-bottom:1px solid var(--border); }
     .stat-row:last-child { border-bottom:none; }
-    .stat-key { font-family:var(--mono); font-size:11px; color:var(--ink3); }
-    .stat-val { font-family:var(--mono); font-size:12px; font-weight:500; color:var(--ink); }
-    .stat-val.fraud { color:var(--red); }
-    .stat-val.legit { color:var(--green); }
-
-    /* Footer */
-    .page-footer { border-top:1px solid var(--rule); padding:14px 48px; display:flex; justify-content:space-between; }
-    .page-footer span { font-family:var(--mono); font-size:10px; color:var(--ink3); }
-
-    @media(max-width:900px) {
-      .page { grid-template-columns:1fr; }
-      .topbar, .section-bar, .model-tabs, .left-panel, .right-panel, .page-footer { padding-left:24px; padding-right:24px; }
-      .fields-row.four { grid-template-columns:1fr 1fr; }
-    }
-    @media(max-width:560px) { .fields-row, .fields-row.four { grid-template-columns:1fr; } }
+    .stat-k { font-size:14px; color:var(--text2); }
+    .stat-v { font-size:14px; font-weight:700; color:var(--text); }
+    .stat-v.fraud { color:var(--red); }
+    .stat-v.legit { color:var(--green); }
+    .risk-chip { font-size:11px; font-weight:700; padding:3px 10px; border-radius:4px; letter-spacing:0.04em; }
+    .risk-chip.high     { background:#fef2f2; color:var(--red); }
+    .risk-chip.moderate { background:#fffbeb; color:#d97706; }
+    .risk-chip.low      { background:var(--green-lt); color:var(--green); }
+    .analysis-note { margin:16px 24px 20px; padding:12px 14px; background:var(--bg); border-radius:8px; font-size:12px; color:var(--text3); font-style:italic; line-height:1.6; }
+    .ai-card { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+    .ai-head { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:10px; }
+    .ai-text { font-size:13px; color:var(--text2); line-height:1.65; }
+    @media(max-width:620px){ .model-cards{grid-template-columns:1fr 1fr;} .form-row{grid-template-columns:1fr;} .field-row{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
 
-  <!-- Topbar -->
-  <div class="topbar">
-    <div style="display:flex;align-items:center;gap:32px">
-      <div class="site-id">FDS — Fraud Detection</div>
-      <nav class="topbar-nav">
-        <a href="#">Analysis</a>
-        <a href="#">Documentation</a>
-        <a href="#">About</a>
-      </nav>
-    </div>
-    <div class="topbar-right" id="live-time"></div>
+<nav class="topnav">
+  <div class="brand">FraudIntel</div>
+  <div class="nav-links">
+    <div class="nav-link active">Dashboard</div>
+    <div class="nav-link">Analysis</div>
+    <div class="nav-link">Documentation</div>
+    <div class="nav-link">About</div>
   </div>
-
-  <!-- Section bar -->
-  <div class="section-bar">
-    <span>Dashboard</span>
-    <span style="color:var(--rule)">/</span>
-    <span class="current">Transaction Analysis</span>
+  <div class="nav-right">
+    <div class="nav-icon">🔔</div>
+    <div class="nav-icon">⚙</div>
+    <div class="nav-avatar">RS</div>
   </div>
+</nav>
 
-  <!-- Model tabs -->
-  <div class="model-tabs">
-    <button class="tab-btn active" data-model="ft_original">FTTransformer — Original</button>
-    <button class="tab-btn" data-model="ft_extracted">FTTransformer — Extracted</button>
-    <button class="tab-btn" data-model="mlp_original">MLP — Original</button>
-    <button class="tab-btn" data-model="mlp_extracted">MLP — Extracted</button>
-  </div>
+<div class="page">
+  <h1 class="page-title">Transaction Analysis</h1>
+  <p class="page-desc">Configure financial parameters and select a predictive model to evaluate fraud probability.</p>
 
-  <!-- Page -->
-  <div class="page">
-    <div class="left-panel">
-      <div class="page-title">
-        <h1>Transaction Analysis</h1>
-        <p>Enter the transaction details below. The selected model will return a fraud probability score instantly.</p>
+  <div class="grid">
+    <div class="left-col">
+
+      <div>
+        <div class="model-section-label">Active Model Selection</div>
+        <div class="model-cards">
+          <div class="model-card active" data-model="ft_original">
+            <div class="model-card-name">FTTransformer</div>
+            <div class="model-card-sub">Original</div>
+          </div>
+          <div class="model-card" data-model="ft_extracted">
+            <div class="model-card-name">FTTransformer</div>
+            <div class="model-card-sub">Extracted</div>
+          </div>
+          <div class="model-card" data-model="mlp_original">
+            <div class="model-card-name">MLP</div>
+            <div class="model-card-sub">Original</div>
+          </div>
+          <div class="model-card" data-model="mlp_extracted">
+            <div class="model-card-name">MLP</div>
+            <div class="model-card-sub">Extracted</div>
+          </div>
+        </div>
+        <div class="ext-notice" id="ext-notice">ℹ This model uses 14 extracted features. Financial ratios are computed automatically from your inputs.</div>
       </div>
-      <hr class="divider" />
 
-      <div class="model-badge">
-        Active model: <strong id="active-model-label">FTTransformer — Original</strong>
-      </div>
-
-      <div class="ext-notice" id="ext-notice">
-        This model uses <strong>14 extracted features</strong> — the 9 original fields plus 5 engineered financial ratios calculated automatically from your input.
-      </div>
-
-      <form id="fraud-form">
-        <div class="form-section">
-          <div class="form-section-label">Financial Profile</div>
-          <div class="fields-row">
+      <form id="form">
+        <div class="form-row">
+          <div class="form-card">
+            <div class="form-card-title">Financial Profile</div>
             <div class="field">
-              <label>Transaction Amount</label>
+              <div class="field-label">Transaction Amount</div>
               <div class="field-wrap">
-                <input type="number" id="amount" placeholder="0.00" step="0.01" class="has-unit" required />
-                <span class="field-unit">$</span>
+                <span class="field-prefix">$</span>
+                <input type="number" id="amount" placeholder="1,250.00" step="any" class="has-prefix" required />
               </div>
             </div>
             <div class="field">
-              <label>Annual Income</label>
-              <div class="field-wrap">
-                <input type="number" id="income" placeholder="0" class="has-unit" required />
-                <span class="field-unit">$</span>
+              <div class="field-label">Annual Income</div>
+              <input type="number" id="income" placeholder="85,000" step="any" required />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <div class="field-label">Total Debt</div>
+                <input type="number" id="debt" placeholder="12,400" step="any" required />
+              </div>
+              <div class="field">
+                <div class="field-label">Credit Score</div>
+                <input type="number" id="credit_score" placeholder="740" step="any" min="300" max="850" required />
               </div>
             </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-card-title">Account Holder</div>
             <div class="field">
-              <label>Total Debt</label>
-              <div class="field-wrap">
-                <input type="number" id="debt" placeholder="0" class="has-unit" required />
-                <span class="field-unit">$</span>
-              </div>
-            </div>
-            <div class="field">
-              <label>Credit Score</label>
-              <input type="number" id="credit_score" placeholder="300–850" min="300" max="850" required />
+              <div class="field-label">Age</div>
+              <input type="number" id="age" placeholder="34" step="any" min="18" max="100" required />
             </div>
           </div>
         </div>
 
-        <div class="form-section">
-          <div class="form-section-label">Account Holder</div>
-          <div class="fields-row">
+        <div class="form-card">
+          <div class="form-card-title">Transaction Timestamp</div>
+          <div class="ts-grid">
             <div class="field">
-              <label>Age</label>
-              <div class="field-wrap">
-                <input type="number" id="age" placeholder="18–100" min="18" max="100" class="has-unit" required />
-                <span class="field-unit">yrs</span>
-              </div>
+              <div class="field-label">Hour</div>
+              <input type="number" id="hour" placeholder="14" step="any" min="0" max="23" required />
+            </div>
+            <div class="field">
+              <div class="field-label">Day</div>
+              <input type="number" id="day" placeholder="15" step="any" min="1" max="31" required />
+            </div>
+            <div class="field">
+              <div class="field-label">Month</div>
+              <input type="number" id="month" placeholder="08" step="any" min="1" max="12" required />
+            </div>
+            <div class="field">
+              <div class="field-label">Year</div>
+              <input type="number" id="year" placeholder="2026" step="any" min="2020" max="2030" required />
             </div>
           </div>
         </div>
 
-        <div class="form-section">
-          <div class="form-section-label">Transaction Timestamp</div>
-          <div class="fields-row four">
-            <div class="field">
-              <label>Hour</label>
-              <input type="number" id="hour" placeholder="0–23" min="0" max="23" required />
-            </div>
-            <div class="field">
-              <label>Day</label>
-              <input type="number" id="day" placeholder="1–31" min="1" max="31" required />
-            </div>
-            <div class="field">
-              <label>Month</label>
-              <input type="number" id="month" placeholder="1–12" min="1" max="12" required />
-            </div>
-            <div class="field">
-              <label>Year</label>
-              <input type="number" id="year" placeholder="2026" min="2020" max="2030" required />
-            </div>
-          </div>
-        </div>
-
-        <div class="submit-row">
-          <button type="submit" class="btn-submit" id="submit-btn">
-            <span id="btn-text">Run Analysis</span>
+        <div class="actions">
+          <button type="submit" class="btn-run" id="submit-btn">
+            <span id="btn-text">RUN ANALYSIS</span>
             <div class="spinner" id="spinner"></div>
           </button>
-          <button type="button" class="btn-clear" id="clear-btn">Clear</button>
+          <button type="button" class="btn-clear" id="clear-btn">CLEAR</button>
         </div>
         <div class="error-bar" id="error-bar"></div>
       </form>
     </div>
 
-    <!-- Right panel -->
-    <div class="right-panel">
-      <div class="result-block">
-        <div class="result-top">
-          <div id="idle-state">
-            <div class="idle-indicator"><div class="idle-dot"></div></div>
-            <div class="idle-label">Awaiting input</div>
-          </div>
-          <div class="verdict-wrap" id="verdict-wrap">
-            <div class="verdict-stamp" id="verdict-stamp"></div>
-            <div class="verdict-score" id="verdict-score"></div>
-            <div class="verdict-score-label">Fraud Probability</div>
-          </div>
-        </div>
-        <div class="meter-wrap">
-          <div class="meter-header">
-            <span>Risk Level</span>
-            <span id="meter-pct">—</span>
-          </div>
-          <div class="meter-track">
-            <div class="meter-fill" id="meter-fill"></div>
+    <div class="right-col">
+      <div class="result-card">
+        <div class="result-top" id="result-top"></div>
+        <div class="result-body">
+          <div class="result-label">Analysis Result</div>
+          <div class="donut-wrap">
+            <svg class="donut-svg" viewBox="0 0 180 180">
+              <circle cx="90" cy="90" r="70" fill="none" stroke="#e2e6ef" stroke-width="14"/>
+              <circle id="donut-arc" cx="90" cy="90" r="70" fill="none"
+                stroke="#e2e6ef" stroke-width="14" stroke-linecap="round"
+                stroke-dasharray="439.8" stroke-dashoffset="439.8"
+                transform="rotate(-90 90 90)"
+                style="transition:stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1),stroke 0.3s"/>
+            </svg>
+            <div class="donut-center">
+              <div class="donut-pct" id="donut-pct">—</div>
+              <div class="donut-sub">PROBABILITY</div>
+            </div>
           </div>
         </div>
-        <div class="stat-row">
-          <span class="stat-key">Verdict</span>
-          <span class="stat-val" id="s-verdict">—</span>
+        <div class="stats">
+          <div class="stat-row">
+            <span class="stat-k">Risk Level</span>
+            <span class="stat-v"><span class="risk-chip" id="risk-chip" style="display:none">—</span></span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-k">Verdict</span>
+            <span class="stat-v" id="s-verdict">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-k">Confidence</span>
+            <span class="stat-v" id="s-conf">—</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-k">Model Used</span>
+            <span class="stat-v" id="s-model">—</span>
+          </div>
         </div>
-        <div class="stat-row">
-          <span class="stat-key">Fraud probability</span>
-          <span class="stat-val" id="s-prob">—</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-key">Confidence</span>
-          <span class="stat-val" id="s-conf">—</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-key">Model used</span>
-          <span class="stat-val" id="s-model">—</span>
-        </div>
+        <div class="analysis-note" id="analysis-note">Fill in the transaction details and click Run Analysis to evaluate fraud probability.</div>
+      </div>
+
+      <div class="ai-card">
+        <div class="ai-head">💡 AI Insight</div>
+        <div class="ai-text" id="ai-text">Select a model and submit a transaction to receive an insight about the risk profile.</div>
       </div>
     </div>
   </div>
-
-  <div class="page-footer">
-    <span>Fraud Detection System · Rayen Souai · EPI 2025/2026</span>
-    <span>FTTransformer · MLP · PyTorch · Flask</span>
-  </div>
+</div>
 
 <script>
-  // Clock
-  function updateTime() {
-    const now = new Date();
-    document.getElementById('live-time').textContent =
-      now.toLocaleDateString('en-GB') + ' · ' +
-      now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  }
-  updateTime(); setInterval(updateTime, 1000);
+  let model = 'ft_original';
 
-  // Tabs
-  let selectedModel = 'ft_original';
-  const labels = {
-    ft_original:   'FTTransformer — Original',
-    ft_extracted:  'FTTransformer — Extracted',
-    mlp_original:  'MLP — Original',
-    mlp_extracted: 'MLP — Extracted'
-  };
-
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedModel = btn.dataset.model;
-      document.getElementById('active-model-label').textContent = labels[selectedModel];
-
-      // Show extracted notice for extracted models
-      const isExtracted = selectedModel.includes('extracted');
-      document.getElementById('ext-notice').classList.toggle('show', isExtracted);
-
-      // Reset result panel
-      document.getElementById('idle-state').style.display = '';
-      document.getElementById('verdict-wrap').style.display = 'none';
-      document.getElementById('meter-fill').style.width = '0%';
-      document.getElementById('meter-pct').textContent = '—';
-      document.getElementById('s-verdict').textContent = '—';
-      document.getElementById('s-verdict').className = 'stat-val';
-      document.getElementById('s-prob').textContent = '—';
-      document.getElementById('s-conf').textContent = '—';
-      document.getElementById('s-model').textContent = '—';
-      document.getElementById('error-bar').style.display = 'none';
+  document.querySelectorAll('.model-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.model-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      model = card.dataset.model;
+      document.getElementById('ext-notice').classList.toggle('show', model.includes('extracted'));
     });
   });
 
-  // Form
-  const form      = document.getElementById('fraud-form');
-  const submitBtn = document.getElementById('submit-btn');
-  const btnText   = document.getElementById('btn-text');
-  const spinner   = document.getElementById('spinner');
-  const errorBar  = document.getElementById('error-bar');
+  function getRisk(prob) {
+    if (prob >= 70) return { level:'high',     label:'HIGH RISK' };
+    if (prob >= 40) return { level:'moderate', label:'MODERATE RISK' };
+    return                  { level:'low',      label:'LOW RISK' };
+  }
 
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    form.reset(); errorBar.style.display = 'none';
+  function getInsight(isFraud, prob, amt, cr, hr) {
+    const a=parseFloat(amt), c=parseFloat(cr), h=parseFloat(hr);
+    if (isFraud) {
+      if (a>3000) return `High-value transaction of $${a.toLocaleString()} detected. Combined with a credit score of ${c}, this significantly elevates the fraud risk profile.`;
+      if (c<450)  return `Poor credit profile (score: ${c}) combined with transaction timing at hour ${h} indicates elevated risk. Manual review recommended.`;
+      if (h<=4)   return `Transaction initiated at ${h}:00 — an unusual hour with historically higher fraud rates. Proceed with caution.`;
+      return `Multiple risk indicators detected. The probability score of ${prob}% exceeds the fraud threshold. Manual review recommended.`;
+    } else {
+      if (prob<15) return `Transaction patterns align with the user's expected financial behavior. Low geographical and temporal discrepancy detected.`;
+      if (c>700)   return `Strong credit profile (score: ${c}) and consistent transaction amount reduce fraud likelihood. Pattern within normal parameters.`;
+      return `Transaction parameters are within acceptable risk bounds. Probability score of ${prob}% indicates low fraud likelihood.`;
+    }
+  }
+
+  const form=document.getElementById('form');
+  const submitBtn=document.getElementById('submit-btn');
+  const btnText=document.getElementById('btn-text');
+  const spinner=document.getElementById('spinner');
+  const errorBar=document.getElementById('error-bar');
+
+  document.getElementById('clear-btn').addEventListener('click',()=>{
+    form.reset(); errorBar.style.display='none';
+    document.getElementById('result-top').className='result-top';
+    document.getElementById('donut-arc').style.strokeDashoffset='439.8';
+    document.getElementById('donut-arc').style.stroke='#e2e6ef';
+    document.getElementById('donut-pct').textContent='—';
+    document.getElementById('donut-pct').className='donut-pct';
+    document.getElementById('risk-chip').style.display='none';
+    document.getElementById('s-verdict').textContent='—';
+    document.getElementById('s-verdict').className='stat-v';
+    document.getElementById('s-conf').textContent='—';
+    document.getElementById('s-model').textContent='—';
+    document.getElementById('analysis-note').textContent='Fill in the transaction details and click Run Analysis to evaluate fraud probability.';
+    document.getElementById('ai-text').textContent='Select a model and submit a transaction to receive an insight about the risk profile.';
   });
 
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', async e => {
     e.preventDefault();
-    errorBar.style.display = 'none';
-    submitBtn.disabled = true;
-    btnText.textContent = 'Analyzing...';
-    spinner.style.display = 'block';
-
-    const payload = {
-      model_type:   selectedModel,
-      amount:       document.getElementById('amount').value,
-      age:          document.getElementById('age').value,
-      income:       document.getElementById('income').value,
-      debt:         document.getElementById('debt').value,
-      credit_score: document.getElementById('credit_score').value,
-      hour:         document.getElementById('hour').value,
-      day:          document.getElementById('day').value,
-      month:        document.getElementById('month').value,
-      year:         document.getElementById('year').value,
+    errorBar.style.display='none';
+    submitBtn.disabled=true; btnText.textContent='ANALYZING...'; spinner.style.display='block';
+    const amt=document.getElementById('amount').value;
+    const cr=document.getElementById('credit_score').value;
+    const hr=document.getElementById('hour').value;
+    const payload={
+      model_type:model, amount:amt, age:document.getElementById('age').value,
+      income:document.getElementById('income').value, debt:document.getElementById('debt').value,
+      credit_score:cr, hour:hr, day:document.getElementById('day').value,
+      month:document.getElementById('month').value, year:document.getElementById('year').value,
     };
-
     try {
-      const res  = await fetch('/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-
-      const isFraud = data.verdict === 'FRAUD';
-      const cls     = isFraud ? 'fraud' : 'legit';
-
-      document.getElementById('idle-state').style.display = 'none';
-      const vw = document.getElementById('verdict-wrap');
-      vw.style.display = 'flex';
-
-      const stamp = document.getElementById('verdict-stamp');
-      stamp.textContent = isFraud ? 'Fraudulent' : 'Legitimate';
-      stamp.className   = 'verdict-stamp ' + cls;
-
-      const score = document.getElementById('verdict-score');
-      score.textContent = data.probability + '%';
-      score.className   = 'verdict-score ' + cls;
-
-      const fill = document.getElementById('meter-fill');
-      fill.className = 'meter-fill ' + cls;
-      setTimeout(() => { fill.style.width = data.probability + '%'; }, 80);
-      document.getElementById('meter-pct').textContent = data.probability + '%';
-
-      const sv = document.getElementById('s-verdict');
-      sv.textContent = isFraud ? 'FRAUD' : 'LEGITIMATE';
-      sv.className   = 'stat-val ' + cls;
-
-      document.getElementById('s-prob').textContent  = data.probability + '%';
-      document.getElementById('s-conf').textContent  = data.confidence + '%';
-      document.getElementById('s-model').textContent = data.model_used;
-
-    } catch (err) {
-      errorBar.textContent   = 'Error: ' + err.message;
-      errorBar.style.display = 'block';
+      const res=await fetch('/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data=await res.json();
+      if(data.error) throw new Error(data.error);
+      const isFraud=data.verdict==='FRAUD';
+      const cls=isFraud?'fraud':'legit';
+      const risk=getRisk(data.probability);
+      document.getElementById('result-top').className='result-top '+cls;
+      const arc=document.getElementById('donut-arc');
+      setTimeout(()=>{
+        arc.style.strokeDashoffset=439.8-(data.probability/100)*439.8;
+        arc.style.stroke=isFraud?'#dc2626':'#16a34a';
+      },80);
+      const dp=document.getElementById('donut-pct');
+      dp.textContent=data.probability+'%'; dp.className='donut-pct '+cls;
+      const chip=document.getElementById('risk-chip');
+      chip.textContent=risk.label; chip.className='risk-chip '+risk.level; chip.style.display='inline-block';
+      const sv=document.getElementById('s-verdict');
+      sv.textContent=isFraud?'Rejected':'Approved'; sv.className='stat-v '+cls;
+      document.getElementById('s-conf').textContent=data.confidence+'%';
+      document.getElementById('s-model').textContent=data.model_used.replace(' — ',' · ');
+      const now=new Date();
+      document.getElementById('analysis-note').textContent=
+        `Analysis completed at ${now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. Model weights current session.`;
+      document.getElementById('ai-text').textContent=getInsight(isFraud,data.probability,amt,cr,hr);
+    } catch(err) {
+      errorBar.textContent='⚠ '+err.message; errorBar.style.display='block';
     } finally {
-      submitBtn.disabled    = false;
-      btnText.textContent   = 'Run Analysis';
-      spinner.style.display = 'none';
+      submitBtn.disabled=false; btnText.textContent='RUN ANALYSIS'; spinner.style.display='none';
     }
   });
 </script>
