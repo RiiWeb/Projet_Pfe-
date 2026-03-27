@@ -109,6 +109,7 @@
   <div class="nav-right">
     <div class="nav-icon">🔔</div>
     <div class="nav-icon">⚙</div>
+    <button id="voice-btn" onclick="toggleVoice()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all 0.15s;">🔇 Voice Off</button>
     <div class="nav-avatar">RS</div>
   </div>
 </nav>
@@ -262,6 +263,33 @@
 </div>
 
 <script>
+  let voiceEnabled = false;
+
+  function toggleVoice() {
+    voiceEnabled = !voiceEnabled;
+    const btn = document.getElementById('voice-btn');
+    btn.textContent = voiceEnabled ? '🔊 Voice On' : '🔇 Voice Off';
+    btn.style.background    = voiceEnabled ? '#eef3fd' : '';
+    btn.style.color         = voiceEnabled ? '#1a56db' : '';
+    btn.style.borderColor   = voiceEnabled ? '#1a56db' : '';
+  }
+
+  function speak(isFraud, probability, confidence) {
+    if (!voiceEnabled) return;
+    const text = isFraud
+      ? `Alert. Fraudulent transaction detected. Fraud probability is ${probability} percent. Confidence score is ${confidence} percent. Transaction rejected.`
+      : `Transaction verified. Legitimate transaction confirmed. Fraud probability is ${probability} percent. Confidence score is ${confidence} percent. Transaction approved.`;
+    fetch('/speak?text=' + encodeURIComponent(text))
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.play();
+        audio.onended = () => URL.revokeObjectURL(url);
+      })
+      .catch(err => console.warn('TTS error:', err));
+  }
+
   let model = 'ft_original';
 
   document.querySelectorAll('.model-card').forEach(card => {
@@ -353,6 +381,7 @@
       document.getElementById('analysis-note').textContent=
         `Analysis completed at ${now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. Model weights current session.`;
       document.getElementById('ai-text').textContent=getInsight(isFraud,data.probability,amt,cr,hr);
+      speak(isFraud, data.probability, data.confidence);
     } catch(err) {
       errorBar.textContent='⚠ '+err.message; errorBar.style.display='block';
     } finally {

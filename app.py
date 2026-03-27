@@ -1,10 +1,28 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 import torch
 import torch.nn as nn
 import numpy as np
 import pickle
+import asyncio
+import edge_tts
+import tempfile
 
 app = Flask(__name__)
+
+VOICE = "en-US-JennyNeural"  # hardcoded US neural voice
+
+@app.route('/speak')
+def speak_route():
+    text = request.args.get('text', '')
+    if not text:
+        return jsonify({'error': 'no text'}), 400
+    tmp = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+    tmp.close()
+    async def _generate():
+        tts = edge_tts.Communicate(text=text, voice=VOICE)
+        await tts.save(tmp.name)
+    asyncio.run(_generate())
+    return send_file(tmp.name, mimetype='audio/mpeg')
 
 # ── Model Definitions ─────────────────────────────────────────────────────────
 class FTTransformer(nn.Module):
@@ -53,8 +71,30 @@ device = torch.device('cpu')
 with open('fttransformer.pkl', 'rb') as f:
     ft_bundle = pickle.load(f)
 ft_model  = ft_bundle['model'].to(device)
-ft_scaler = ft_bundle['scaler']
 ft_model.eval()
+
+# The scaler in fttransformer.pkl was fitted on already-scaled data (Cell 91
+# scaled df in-place before saving). Rebuild a correct scaler from known ranges.
+from sklearn.preprocessing import MinMaxScaler
+import pandas as pd
+_ft_ranges = {
+    'amount':       (1.0,   4999.0),
+    'age':          (18.0,  70.0),
+    'income':       (20000.0, 149999.0),
+    'debt':         (0.0,   49999.0),
+    'credit_score': (300.0, 850.0),
+    'hour':         (0.0,   23.0),
+    'day':          (1.0,   31.0),
+    'month':        (1.0,   12.0),
+    'year':         (2020.0, 2024.0),
+}
+_ft_cols = ['amount','age','income','debt','credit_score','hour','day','month','year']
+ft_scaler = MinMaxScaler()
+ft_scaler.fit(pd.DataFrame(
+    [[_ft_ranges[c][0] for c in _ft_cols],
+     [_ft_ranges[c][1] for c in _ft_cols]],
+    columns=_ft_cols
+))
 
 with open('fttransformer_extracted.pkl', 'rb') as f:
     ft_ext_bundle = pickle.load(f)
@@ -74,12 +114,8 @@ mlp_ext_model  = mlp_ext_bundle['model'].to(device)
 mlp_ext_scaler = mlp_ext_bundle['scaler']
 mlp_ext_model.eval()
 
-import pandas as pd
 
-NUM_COLS_9_FT  = ['amount', 'age', 'income', 'debt', 'credit_score', 'year', 'month', 'day', 'hour']
-NUM_COLS_9_MLP = ['amount', 'age', 'income', 'debt', 'credit_score', 'hour', 'day', 'month', 'year']
-NUM_COLS_14    = ['amount', 'age', 'income', 'debt', 'credit_score', 'hour', 'day', 'month', 'year',
-                  'debt_to_income', 'amount_to_income', 'amount_to_debt', 'credit_x_amount', 'age_x_debt']
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -107,28 +143,16 @@ def predict():
         credit_x_amount  = credit_score * amount
         age_x_debt       = age * debt
 
-        # 9 features — FTTransformer order
-        features_9_ft = pd.DataFrame([[
-            amount, age, income, debt, credit_score,
-            year, month, day, hour
-        ]], columns=NUM_COLS_9_FT)
-
-        # 9 features — MLP order
-        features_9_mlp = pd.DataFrame([[
-            amount, age, income, debt, credit_score,
-            hour, day, month, year
-        ]], columns=NUM_COLS_9_MLP)
-
-        # 14 extracted features
-        features_14 = pd.DataFrame([[
-            amount, age, income, debt, credit_score,
-            hour, day, month, year,
-            debt_to_income, amount_to_income, amount_to_debt,
-            credit_x_amount, age_x_debt
-        ]], columns=NUM_COLS_14)
+        # Use numpy arrays to bypass sklearn feature-name validation entirely
+        arr_9  = np.array([[amount, age, income, debt, credit_score,
+                            hour, day, month, year]])
+        arr_14 = np.array([[amount, age, income, debt, credit_score,
+                            hour, day, month, year,
+                            debt_to_income, amount_to_income, amount_to_debt,
+                            credit_x_amount, age_x_debt]])
 
         if model_type == 'ft_original':
-            scaled = ft_scaler.transform(features_9_ft)
+            scaled = ft_scaler.transform(arr_9)
             x_num  = torch.tensor(scaled, dtype=torch.float32)
             x_cat  = torch.tensor([[0, 0]], dtype=torch.long)
             with torch.no_grad():
@@ -136,7 +160,7 @@ def predict():
             label = 'FTTransformer — Original'
 
         elif model_type == 'ft_extracted':
-            scaled = ft_ext_scaler.transform(features_14)
+            scaled = ft_ext_scaler.transform(arr_14)
             x_num  = torch.tensor(scaled, dtype=torch.float32)
             x_cat  = torch.tensor([[0, 0]], dtype=torch.long)
             with torch.no_grad():
@@ -144,14 +168,14 @@ def predict():
             label = 'FTTransformer — Extracted'
 
         elif model_type == 'mlp_original':
-            scaled = mlp_scaler.transform(features_9_mlp)
+            scaled = mlp_scaler.transform(arr_9)
             x      = torch.tensor(scaled, dtype=torch.float32)
             with torch.no_grad():
                 output = torch.sigmoid(mlp_model(x))
             label = 'MLP — Original'
 
         else:  # mlp_extracted
-            scaled = mlp_ext_scaler.transform(features_14)
+            scaled = mlp_ext_scaler.transform(arr_14)
             x      = torch.tensor(scaled, dtype=torch.float32)
             with torch.no_grad():
                 output = torch.sigmoid(mlp_ext_model(x))
