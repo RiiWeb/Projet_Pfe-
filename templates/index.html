@@ -93,28 +93,50 @@
     .ai-card { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
     .ai-head { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--text3); margin-bottom:10px; }
     .ai-text { font-size:13px; color:var(--text2); line-height:1.65; }
+    .view-section { display:none; }
+    .view-section.active { display:block; }
+    .history-shell { background:var(--white); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .history-head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:20px 24px; border-bottom:1px solid var(--border); }
+    .history-head h2 { font-size:18px; font-weight:700; letter-spacing:-0.02em; }
+    .history-head p { font-size:13px; color:var(--text3); margin-top:4px; }
+    .history-refresh { padding:10px 14px; background:var(--blue-lt); border:1px solid #bfdbfe; border-radius:8px; color:var(--blue); font-size:12px; font-weight:700; cursor:pointer; }
+    .history-wrap { overflow-x:auto; }
+    .history-table { width:100%; border-collapse:collapse; }
+    .history-table th, .history-table td { padding:14px 24px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top; }
+    .history-table th { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text3); background:#fafbfd; }
+    .history-table td { font-size:13px; color:var(--text2); }
+    .history-table tr:last-child td { border-bottom:none; }
+    .history-primary { font-weight:700; color:var(--text); }
+    .history-secondary { font-size:12px; color:var(--text3); margin-top:4px; line-height:1.5; }
+    .history-empty { padding:32px 24px; text-align:center; color:var(--text3); font-size:13px; }
     @media(max-width:620px){ .model-cards{grid-template-columns:1fr 1fr;} .form-row{grid-template-columns:1fr;} .field-row{grid-template-columns:1fr;} }
   </style>
+  <script>
+    const CURRENT_USER = { username: "{{ username }}", is_admin: {{ 'true' if is_admin else 'false' }} };
+  </script>
 </head>
 <body>
 
 <nav class="topnav">
   <div class="brand">FraudIntel</div>
   <div class="nav-links">
-    <div class="nav-link active">Dashboard</div>
-    <div class="nav-link">Analysis</div>
-    <div class="nav-link">Documentation</div>
-    <div class="nav-link">About</div>
+    <div class="nav-link active" data-view="dashboard">Dashboard</div>
+    <div class="nav-link" data-view="history">History</div>
+    <div class="nav-link" data-view="profile">Profile</div>
+    <div id="admin-nav-link" class="nav-link" data-view="admin" style="display:none">Admin</div>
   </div>
   <div class="nav-right">
     <div class="nav-icon">🔔</div>
     <div class="nav-icon">⚙</div>
     <button id="voice-btn" onclick="toggleVoice()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all 0.15s;">🔇 Voice Off</button>
-    <div class="nav-avatar">RS</div>
+    <div class="nav-avatar" id="nav-avatar" title="Logged in as analyst" onclick="showView('profile')" style="cursor:pointer;">RS</div>
+    <a href="/logout" style="text-decoration:none;">
+      <div class="nav-icon" title="Sign out" style="font-size:13px;color:var(--text2)">&#x2192;</div>
+    </a>
   </div>
 </nav>
 
-<div class="page">
+<div class="page view-section active" id="dashboard-view">
   <h1 class="page-title">Transaction Analysis</h1>
   <p class="page-desc">Configure financial parameters and select a predictive model to evaluate fraud probability.</p>
 
@@ -254,6 +276,13 @@
         <div class="analysis-note" id="analysis-note">Fill in the transaction details and click Run Analysis to evaluate fraud probability.</div>
       </div>
 
+
+      <div class="ai-card" id="radar-card" style="display:none;padding:16px 12px 12px;">
+        <div style="width:100%;max-width:280px;margin:0 auto;aspect-ratio:1;">
+          <canvas id="radarChart" style="width:100%!important;height:100%!important;"></canvas>
+        </div>
+        <div id="radar-legend" style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px 14px;margin-top:10px;"></div>
+      </div>
       <div class="ai-card">
         <div class="ai-head">💡 AI Insight</div>
         <div class="ai-text" id="ai-text">Select a model and submit a transaction to receive an insight about the risk profile.</div>
@@ -262,8 +291,142 @@
   </div>
 </div>
 
+<div class="page view-section" id="history-view">
+  <h1 class="page-title">Analysis History</h1>
+  <p class="page-desc">Review the latest saved predictions for your account, ordered from newest to oldest.</p>
+
+  <div class="history-shell">
+    <div class="history-head">
+      <div>
+        <h2>Saved Results</h2>
+        <p>Each completed analysis is stored automatically in SQLite.</p>
+      </div>
+      <button class="history-refresh" id="history-refresh-btn" type="button">REFRESH</button>
+    </div>
+    <div class="history-wrap">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Model</th>
+            <th>Input Summary</th>
+            <th>Probability</th>
+            <th>Risk Level</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr>
+            <td colspan="6" class="history-empty">No analysis history yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Profile view ─────────────────────────────────────────────── -->
+<div class="page view-section" id="profile-view">
+  <h1 class="page-title">My Profile</h1>
+  <p class="page-desc">Your account information and activity summary.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px;">
+    <div class="form-card">
+      <div class="form-card-title">Account</div>
+      <div style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Username</div>
+        <div id="profile-username" style="font-size:16px;font-weight:600;color:var(--text);">—</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Role</div>
+        <div id="profile-role" style="font-size:14px;font-weight:600;">—</div>
+      </div>
+    </div>
+    <div class="form-card">
+      <div class="form-card-title">Activity</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center;">
+        <div>
+          <div id="profile-total" style="font-size:28px;font-weight:700;color:var(--blue);">—</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Total</div>
+        </div>
+        <div>
+          <div id="profile-fraud" style="font-size:28px;font-weight:700;color:#dc2626;">—</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Fraud</div>
+        </div>
+        <div>
+          <div id="profile-legit" style="font-size:28px;font-weight:700;color:#16a34a;">—</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px;">Legit</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Admin view ────────────────────────────────────────────────── -->
+<div class="page view-section" id="admin-view">
+  <h1 class="page-title">Admin — Analysis History</h1>
+  <p class="page-desc">View, delete and export all analysts' transaction records.</p>
+  <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+    <button onclick="printHistory()" style="padding:9px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;">Print / Export</button>
+    <button onclick="clearAllHistory()" style="padding:9px 20px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;">Clear All History</button>
+  </div>
+  <div id="admin-error" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:12px;color:#dc2626;margin-bottom:14px;"></div>
+  <div id="admin-table-wrap" style="overflow-x:auto;">
+    <table id="admin-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border);">
+          <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:700;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">User</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:700;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Amount</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:700;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Credit Score</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:700;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Verdict</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:700;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Probability</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:700;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Model</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--text3);font-weight:700;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="admin-tbody"></tbody>
+    </table>
+    <div id="admin-empty" style="display:none;text-align:center;padding:40px;color:var(--text3);">No records found.</div>
+  </div>
+</div>
+
 <script>
   let voiceEnabled = false;
+  let activeView = 'dashboard';
+
+  function showView(view) {
+    // Protect admin view - only admins can access
+    if (view === 'admin' && !CURRENT_USER.is_admin) {
+      alert('Admin access required. Please log in with admin credentials.');
+      return;
+    }
+    
+    activeView = view;
+    // Hide all views
+    document.querySelectorAll('.view-section').forEach(section => {
+      section.classList.remove('active');
+    });
+    // Show the selected view
+    const viewEl = document.getElementById(view + '-view');
+    if (viewEl) {
+      viewEl.classList.add('active');
+    }
+    // Update nav links
+    document.querySelectorAll('.nav-link[data-view]').forEach(link => {
+      link.classList.toggle('active', link.dataset.view === view);
+    });
+    // Load data for specific views
+    if (view === 'history') {
+      loadHistory();
+    } else if (view === 'profile') {
+      loadProfile();
+    } else if (view === 'admin') {
+      loadAdminHistory();
+    }
+  }
+
+  document.querySelectorAll('.nav-link[data-view]').forEach(link => {
+    link.addEventListener('click', () => showView(link.dataset.view));
+  });
 
   function toggleVoice() {
     voiceEnabled = !voiceEnabled;
@@ -307,6 +470,69 @@
     return                  { level:'low',      label:'LOW RISK' };
   }
 
+  function getRiskClass(riskLabel) {
+    if (riskLabel === 'HIGH RISK') return 'high';
+    if (riskLabel === 'MODERATE RISK') return 'moderate';
+    return 'low';
+  }
+
+  function formatCurrency(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric.toLocaleString() : '0';
+  }
+
+  function formatInputSummary(inputData) {
+    if (!inputData) return 'No input data';
+    const amount = inputData.amount ?? '—';
+    const age = inputData.age ?? '—';
+    const income = inputData.income ?? '—';
+    return `Amount: $${formatCurrency(amount)} | Age: ${age} | Income: $${formatCurrency(income)}`;
+  }
+
+  function renderHistoryRows(items) {
+    const body = document.getElementById('history-body');
+    if (!items.length) {
+      body.innerHTML = '<tr><td colspan="6" class="history-empty">No analysis history yet.</td></tr>';
+      return;
+    }
+
+    body.innerHTML = items.map(item => {
+      const createdAt = new Date(item.created_at.replace(' ', 'T'));
+      const debt = item.input_data?.debt ?? 0;
+      const creditScore = item.input_data?.credit_score ?? '—';
+      const verdictLabel = item.verdict === 'LEGITIMATE' ? 'Approved' : 'Rejected';
+      return `
+        <tr>
+          <td>
+            <div class="history-primary">${createdAt.toLocaleDateString('en-GB')}</div>
+            <div class="history-secondary">${createdAt.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}</div>
+          </td>
+          <td><div class="history-primary">${item.model_name.replace(' â€” ', ' Â· ')}</div></td>
+          <td>
+            <div class="history-primary">${formatInputSummary(item.input_data)}</div>
+            <div class="history-secondary">Debt: $${formatCurrency(debt)} | Credit: ${creditScore}</div>
+          </td>
+          <td><div class="history-primary">${item.probability}%</div></td>
+          <td><span class="risk-chip ${getRiskClass(item.risk_level)}">${item.risk_level}</span></td>
+          <td><div class="history-primary">${verdictLabel}</div></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function loadHistory() {
+    const body = document.getElementById('history-body');
+    body.innerHTML = '<tr><td colspan="6" class="history-empty">Loading history...</td></tr>';
+    try {
+      const res = await fetch('/history');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      renderHistoryRows(data.history || []);
+    } catch (err) {
+      body.innerHTML = `<tr><td colspan="6" class="history-empty">Unable to load history: ${err.message}</td></tr>`;
+    }
+  }
+
   function getInsight(isFraud, prob, amt, cr, hr) {
     const a=parseFloat(amt), c=parseFloat(cr), h=parseFloat(hr);
     if (isFraud) {
@@ -326,6 +552,7 @@
   const btnText=document.getElementById('btn-text');
   const spinner=document.getElementById('spinner');
   const errorBar=document.getElementById('error-bar');
+  document.getElementById('history-refresh-btn').addEventListener('click', loadHistory);
 
   document.getElementById('clear-btn').addEventListener('click',()=>{
     form.reset(); errorBar.style.display='none';
@@ -341,6 +568,7 @@
     document.getElementById('s-model').textContent='—';
     document.getElementById('analysis-note').textContent='Fill in the transaction details and click Run Analysis to evaluate fraud probability.';
     document.getElementById('ai-text').textContent='Select a model and submit a transaction to receive an insight about the risk profile.';
+    document.getElementById('radar-card').style.display='none'; if(radarChart){radarChart.destroy();radarChart=null;}
   });
 
   form.addEventListener('submit', async e => {
@@ -362,7 +590,7 @@
       if(data.error) throw new Error(data.error);
       const isFraud=data.verdict==='FRAUD';
       const cls=isFraud?'fraud':'legit';
-      const risk=getRisk(data.probability);
+      const risk={ level:getRiskClass(data.risk_level), label:data.risk_level };
       document.getElementById('result-top').className='result-top '+cls;
       const arc=document.getElementById('donut-arc');
       setTimeout(()=>{
@@ -382,12 +610,248 @@
         `Analysis completed at ${now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}. Model weights current session.`;
       document.getElementById('ai-text').textContent=getInsight(isFraud,data.probability,amt,cr,hr);
       speak(isFraud, data.probability, data.confidence);
+      showRadar(model);
+      loadHistory();
     } catch(err) {
       errorBar.textContent='⚠ '+err.message; errorBar.style.display='block';
     } finally {
       submitBtn.disabled=false; btnText.textContent='RUN ANALYSIS'; spinner.style.display='none';
     }
   });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+  const modelMetrics = {
+    ft_original:   {accuracy:98, precision:98, recall:98, f1:98},
+    ft_extracted:  {accuracy:95, precision:95, recall:95, f1:95},
+    mlp_original:  {accuracy:97, precision:98, recall:98, f1:97},
+    mlp_extracted: {accuracy:95, precision:96, recall:95, f1:95},
+  };
+  const modelConfig = {
+    ft_original:   {label:'FTTransformer Original',  hex:'#1a56db'},
+    ft_extracted:  {label:'FTTransformer Extracted', hex:'#7f77dd'},
+    mlp_original:  {label:'MLP Original',            hex:'#0f6e56'},
+    mlp_extracted: {label:'MLP Extracted',           hex:'#5dcaa5'},
+  };
+
+  let radarChart = null;
+
+  function hexToRgba(hex, a) {
+    const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function showRadar(activeModel) {
+    document.getElementById('radar-card').style.display = 'block';
+    const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const gridColor  = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(0,0,0,0.08)';
+    const tickColor  = isDark ? '#718096' : '#8a96b0';
+    const labelColor = isDark ? '#c2c0b6' : '#3d3d3a';
+
+    const datasets = Object.entries(modelMetrics).map(([key, m]) => {
+      const cfg   = modelConfig[key];
+      const active = key === activeModel;
+      return {
+        label: cfg.label,
+        data: [m.accuracy, m.precision, m.recall, m.f1],
+        backgroundColor: active ? hexToRgba(cfg.hex, 0.15) : 'transparent',
+        borderColor: cfg.hex,
+        borderWidth: active ? 2.5 : 1.2,
+        borderDash: active ? [] : [5,3],
+        pointBackgroundColor: cfg.hex,
+        pointBorderColor: '#fff',
+        pointBorderWidth: active ? 2 : 1,
+        pointRadius: active ? 5 : 3,
+        fill: active,
+      };
+    });
+
+    const opts = {
+      responsive: true,
+      maintainAspectRatio: true,
+      animation: {duration:700, easing:'easeInOutQuart'},
+      plugins: {legend:{display:false}},
+      scales: {
+        r: {
+          min:88, max:100,
+          ticks:{
+            stepSize:4,
+            callback: v => v+'%',
+            font:{size:9},
+            backdropColor:'transparent',
+            color: tickColor,
+          },
+          pointLabels:{
+            font:{size:11, weight:'600'},
+            color: labelColor,
+            padding: 6,
+          },
+          grid:{color: gridColor},
+          angleLines:{color: gridColor},
+        }
+      }
+    };
+
+    if (radarChart) {
+      radarChart.data.datasets = datasets;
+      radarChart.options = opts;
+      radarChart.update();
+    } else {
+      radarChart = new Chart(
+        document.getElementById('radarChart').getContext('2d'),
+        {type:'radar', data:{labels:['Accuracy','Precision','Recall','F1 Score'], datasets}, options:opts}
+      );
+    }
+
+    // Legend
+    document.getElementById('radar-legend').innerHTML =
+      Object.entries(modelConfig).map(([key, cfg]) => {
+        const active = key === activeModel;
+        const line = active
+          ? `<span style="display:inline-block;width:22px;height:3px;background:${cfg.hex};border-radius:2px;vertical-align:middle;"></span>`
+          : `<span style="display:inline-block;width:22px;height:0;border-top:2px dashed ${cfg.hex};vertical-align:middle;opacity:0.5;"></span>`;
+        return `<div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2);opacity:${active?1:0.55};">${line}${cfg.label}</div>`;
+      }).join('');
+  }
+
+  // ── Show/hide admin nav based on role ──────────────────────────────
+  if (CURRENT_USER.is_admin) {
+    document.getElementById('admin-nav-link').style.display = 'flex';
+  }
+
+  // Update avatar initials
+  const av = document.getElementById('nav-avatar');
+  if (av && CURRENT_USER.username) {
+    av.textContent = CURRENT_USER.username.slice(0,2).toUpperCase();
+  }
+
+  // ── Profile view ────────────────────────────────────────────────────
+  function loadProfile() {
+    fetch('/profile')
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('profile-username').textContent = d.username;
+        document.getElementById('profile-role').textContent     = d.is_admin ? '🔑 Administrator' : '👤 Analyst';
+        document.getElementById('profile-role').style.color     = d.is_admin ? '#1a56db' : '#4a5578';
+        document.getElementById('profile-total').textContent    = d.tx_count;
+        document.getElementById('profile-fraud').textContent    = d.fraud_count;
+        document.getElementById('profile-legit').textContent    = d.legit_count;
+      });
+  }
+
+  // ── Admin history ────────────────────────────────────────────────────
+  function loadAdminHistory() {
+    // Double check - admin only
+    if (!CURRENT_USER.is_admin) {
+      document.getElementById('admin-error').style.display = 'block';
+      document.getElementById('admin-error').textContent = 'Access denied: Admin privileges required.';
+      return;
+    }
+    
+    fetch('/admin/all-history')
+      .then(r => r.json())
+      .then(d => {
+        if (d.error) {
+          document.getElementById('admin-error').style.display = 'block';
+          document.getElementById('admin-error').textContent = d.error;
+          return;
+        }
+        const tbody = document.getElementById('admin-tbody');
+        const empty = document.getElementById('admin-empty');
+        tbody.innerHTML = '';
+        if (!d.history || d.history.length === 0) {
+          empty.style.display = 'block'; return;
+        }
+        empty.style.display = 'none';
+        d.history.forEach(tx => {
+          const isFraud = tx.verdict === 'FRAUD';
+          const row = document.createElement('tr');
+          row.id = 'admin-row-' + tx.id;
+          row.style.borderBottom = '1px solid var(--border)';
+          row.innerHTML = `
+            <td style="padding:10px 12px;font-weight:600;">${tx.username}</td>
+            <td style="padding:10px 12px;">$${Number(tx.amount).toLocaleString()}</td>
+            <td style="padding:10px 12px;">${tx.credit_score}</td>
+            <td style="padding:10px 12px;">
+              <span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;
+                background:${isFraud?'#fef2f2':'#f0fdf4'};color:${isFraud?'#dc2626':'#16a34a'};">
+                ${tx.verdict}
+              </span>
+            </td>
+            <td style="padding:10px 12px;font-weight:600;color:${isFraud?'#dc2626':'#16a34a'};">${tx.probability}%</td>
+            <td style="padding:10px 12px;color:var(--text3);font-size:12px;">${tx.model_used}</td>
+            <td style="padding:10px 12px;">
+              <button onclick="deleteAnalysis(${tx.id})"
+                style="padding:4px 12px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;
+                  border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Delete</button>
+            </td>`;
+          tbody.appendChild(row);
+        });
+      })
+      .catch(() => {
+        document.getElementById('admin-error').style.display = 'block';
+        document.getElementById('admin-error').textContent = 'Access denied or error loading history.';
+      });
+  }
+
+  function deleteAnalysis(id) {
+    // Admin only
+    if (!CURRENT_USER.is_admin) {
+      alert('Admin access required.');
+      return;
+    }
+    if (!confirm('Delete this record?')) return;
+    fetch('/admin/delete-analysis/' + id, {method:'DELETE'})
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          const row = document.getElementById('admin-row-' + id);
+          if (row) row.remove();
+        } else if (d.error) {
+          alert('Error: ' + d.error);
+        }
+      });
+  }
+
+  function clearAllHistory() {
+    // Admin only
+    if (!CURRENT_USER.is_admin) {
+      alert('Admin access required.');
+      return;
+    }
+    if (!confirm('Clear ALL history? This cannot be undone.')) return;
+    fetch('/admin/clear-history', {method:'DELETE'})
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          document.getElementById('admin-tbody').innerHTML = '';
+          document.getElementById('admin-empty').style.display = 'block';
+        } else if (d.error) {
+          alert('Error: ' + d.error);
+        }
+      });
+  }
+
+  function printHistory() {
+    // Admin only
+    if (!CURRENT_USER.is_admin) {
+      alert('Admin access required.');
+      return;
+    }
+    const table = document.getElementById('admin-table');
+    const win = window.open('', '_blank');
+    win.document.write('<html><head><title>BlockSafe — Analysis History</title>');
+    win.document.write('<style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 12px;border:1px solid #ddd;text-align:left}th{background:#f0f2f5;font-weight:700}h2{margin-bottom:16px}</style>');
+    win.document.write('</head><body>');
+    win.document.write('<h2>BlockSafe — Analysis History</h2>');
+    win.document.write('<p style="color:#888;margin-bottom:16px;">Printed on ' + new Date().toLocaleString() + '</p>');
+    win.document.write(table.outerHTML);
+    win.document.write('</body></html>');
+    win.document.close();
+    win.print();
+  }
+
 </script>
 </body>
 </html>

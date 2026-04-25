@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BlockSafe — Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#f0f2f5; --white:#ffffff; --blue:#1a56db;
+      --border:#e2e6ef; --border2:#cdd4e4; --text:#1a2744;
+      --text3:#8a96b0; --red:#dc2626; --red-lt:#fef2f2; --sans:'Inter',sans-serif;
+    }
+    body {
+      background:var(--bg); font-family:var(--sans);
+      min-height:100vh; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+    }
+    .brand { display:flex; align-items:center; gap:10px; margin-bottom:28px; }
+    .brand-name {
+      font-family:'Space Grotesk',sans-serif; font-size:24px;
+      font-weight:700; color:#0d2a4a; letter-spacing:0.05em; text-transform:uppercase;
+    }
+    .card {
+      background:var(--white); border:1px solid var(--border);
+      border-radius:14px; padding:36px 40px; width:100%; max-width:380px;
+    }
+    .card-title { font-size:18px; font-weight:700; color:var(--text); margin-bottom:6px; }
+    .card-sub { font-size:13px; color:var(--text3); margin-bottom:28px; }
+    .field { margin-bottom:18px; }
+    .field label {
+      display:block; font-size:11px; font-weight:700; letter-spacing:0.08em;
+      text-transform:uppercase; color:var(--text3); margin-bottom:7px;
+    }
+    .field input {
+      width:100%; padding:10px 14px; border:1.5px solid var(--border2);
+      border-radius:8px; font-family:var(--sans); font-size:14px;
+      color:var(--text); outline:none; transition:border-color 0.15s; background:var(--white);
+    }
+    .field input:focus { border-color:var(--blue); }
+    .field input::placeholder { color:var(--border2); }
+    .btn {
+      width:100%; padding:12px; background:var(--blue); color:#fff;
+      border:none; border-radius:8px; font-family:var(--sans);
+      font-size:13px; font-weight:700; letter-spacing:0.06em;
+      text-transform:uppercase; cursor:pointer; transition:background 0.15s;
+      margin-top:6px; box-shadow:0 2px 8px rgba(26,86,219,0.25);
+    }
+    .btn:hover { background:#1344b8; }
+    .error {
+      background:var(--red-lt); border:1px solid #fca5a5;
+      border-radius:8px; padding:10px 14px; font-size:12px;
+      color:var(--red); margin-bottom:18px;
+    }
+    .footer { margin-top:22px; font-size:12px; color:var(--text3); text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2L3 6.5V12C3 16.75 6.96 21.22 12 22C17.04 21.22 21 16.75 21 12V6.5L12 2Z"
+        fill="#1a56db" opacity="0.12" stroke="#1a56db" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M9 12l2 2 4-4" stroke="#1a56db" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="brand-name">BLOCKSAFE</span>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Sign in</div>
+    <div class="card-sub">Access the fraud detection dashboard</div>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/login">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" name="username" placeholder="analyst" required autofocus/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="••••••••" required/>
+      </div>
+      <button type="submit" class="btn">Sign in</button>
+    </form>
+  </div>
+  <div class="footer">BlockSafe &middot; Fraud Detection Platform</div>
+</body>
+</html>
