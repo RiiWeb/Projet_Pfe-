@@ -1,0 +1,10 @@
+﻿flask
+flask-sqlalchemy
+flask-login
+werkzeug
+torch
+numpy
+scikit-learn
+pandas
+edge-tts
+twilio
